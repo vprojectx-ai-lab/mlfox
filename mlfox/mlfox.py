@@ -27,6 +27,11 @@ def _running_in_notebook() -> bool:
     return shell is not None and shell.__class__.__name__ == "ZMQInteractiveShell"
 
 
+def _estimator_name(model_step: Any) -> str:
+    raw = getattr(model_step, "estimator", model_step) if getattr(model_step, "__class__", None) and model_step.__class__.__name__ == "_LabelEncodingClassifier" else model_step
+    return type(raw).__name__
+
+
 def _print_summary(payload: dict[str, Any], candidates: list[dict[str, Any]]) -> None:
     """Print only the concise candidate comparison and final metrics."""
     try:
@@ -161,7 +166,7 @@ class MLFOX:
             "column_intelligence": self.column_report_.to_dict(),
             "preprocessing": {"pipeline": "fold-aware M4–M8", "excluded_features": self.best_pipeline_.named_steps["preprocessing"].excluded_features_},
             "feature_selection": self.best_pipeline_.named_steps["preprocessing"].selector_.to_dict(),
-            "model_selection": self.engine_.report(), "best_estimator": type(self.best_pipeline_.named_steps["model"]).__name__,
+            "model_selection": self.engine_.report(), "best_estimator": _estimator_name(self.best_pipeline_.named_steps["model"]),
             "best_hyperparameters": self.tuner_.best_params_ if self.tune else None,
             "cv_metrics": self.engine_.cv_results_.get(self.engine_.best_model_name_, {}).get("metrics"),
             "holdout_metrics": self.holdout_metrics_, "tuning": self.tuning_report_,
@@ -254,7 +259,7 @@ class MLFOX:
         artifact = {"format": "vprojectx.mlfox", "format_version": ARTIFACT_FORMAT_VERSION,
             "pipeline": self.best_pipeline_, "task_type": self.task_type_,
             "target_column": self.target_column_, "feature_schema": list(self.feature_schema_),
-            "estimator_name": type(self.best_pipeline_.named_steps["model"]).__name__,
+            "estimator_name": _estimator_name(self.best_pipeline_.named_steps["model"]),
             "hyperparameters": self.tuner_.best_params_ if getattr(self, "tune", False) and hasattr(self, "tuner_") else None,
             "configuration": {"task": self.task, "metric": self.metric, "cv": self.cv,
                 "test_size": self.test_size, "random_state": self.random_state,
