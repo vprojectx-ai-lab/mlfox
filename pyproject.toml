@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mlfox"
-version = "1.0.4"
+version = "1.0.5"
 description = "CPU-only MLFOX model selection, evaluation, explainability, and inference toolkit"
 authors = [{name = "vprojectx"}]
 requires-python = ">=3.11"
