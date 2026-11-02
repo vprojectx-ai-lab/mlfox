@@ -30,7 +30,7 @@ def test_public_imports_distribution_and_runtime_configuration():
     assert isinstance(mlfox_package(), MLFOX)
     assert MLFOX.__name__ == "MLFOX"
     assert callable(factory)
-    assert importlib.metadata.version("mlfox") == "1.0.1"
+    assert importlib.metadata.version("mlfox") == "1.0.4"
     model = mlfox(cv=3, test_size=0.25, random_state=17, tune=True,
                   max_tuning_trials=2, progress=False)
     assert (model.cv, model.test_size, model.random_state) == (3, .25, 17)
