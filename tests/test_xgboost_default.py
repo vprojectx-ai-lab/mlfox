@@ -2,7 +2,7 @@ import pandas as pd
 from sklearn.datasets import make_classification, make_regression
 from xgboost import XGBClassifier, XGBRegressor
 
-from mlfox.model_selection import ModelSelectionEngine
+from mlfox.model_selection import ModelSelectionEngine, _LabelEncodingClassifier
 from mlfox.tuning import default_search_space
 
 
@@ -13,9 +13,10 @@ def test_xgboost_is_in_default_candidate_sets_and_cpu_sequential():
 
     classifier = classification["XGBoost"]
     regressor = regression["XGBoost Regressor"]
-    assert isinstance(classifier, XGBClassifier)
+    assert isinstance(classifier, _LabelEncodingClassifier)
+    assert isinstance(classifier.estimator, XGBClassifier)
     assert isinstance(regressor, XGBRegressor)
-    for estimator in (classifier, regressor):
+    for estimator in (classifier.estimator, regressor):
         assert estimator.get_params()["tree_method"] == "hist"
         assert estimator.get_params()["n_jobs"] == 1
         assert estimator.get_params()["device"] == "cpu"

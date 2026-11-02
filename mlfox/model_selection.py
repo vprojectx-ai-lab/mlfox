@@ -5,11 +5,50 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, HistGradientBoostingClassifier, RandomForestRegressor, ExtraTreesRegressor, HistGradientBoostingRegressor
 from sklearn.svm import SVC
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.base import clone
+from sklearn.base import BaseEstimator, ClassifierMixin, clone
+from sklearn.preprocessing import LabelEncoder
 from xgboost import XGBClassifier, XGBRegressor
+import numpy as np
 import time
 from .pipeline import FoldAwarePreprocessor
 from .evaluation import cross_validate_pipeline, metric_values
+
+
+class _LabelEncodingClassifier(BaseEstimator, ClassifierMixin):
+    """Wrap a classifier that requires numeric labels (e.g. XGBoost) so it
+    transparently handles string targets by label-encoding during fit and
+    decoding back to original labels during predict / predict_proba."""
+
+    def __init__(self, estimator):
+        self.estimator = estimator
+
+    def fit(self, X, y, **fit_params):
+        self._le = LabelEncoder()
+        y_encoded = self._le.fit_transform(y)
+        self.estimator.fit(X, y_encoded, **fit_params)
+        self.classes_ = self._le.classes_
+        return self
+
+    def predict(self, X):
+        return self._le.inverse_transform(self.estimator.predict(X))
+
+    def predict_proba(self, X):
+        return self.estimator.predict_proba(X)
+
+    def get_params(self, deep=True):
+        params = {"estimator": self.estimator}
+        if deep:
+            for key, val in self.estimator.get_params(deep=True).items():
+                params[f"estimator__{key}"] = val
+        return params
+
+    def set_params(self, **params):
+        if "estimator" in params:
+            self.estimator = params.pop("estimator")
+        nested = {k.split("estimator__", 1)[1]: v for k, v in params.items() if k.startswith("estimator__")}
+        if nested:
+            self.estimator.set_params(**nested)
+        return self
 
 class ModelSelectionEngine:
     def __init__(self, cv=5, random_state=42, progress=True, estimators=None, primary_metric=None, n_jobs=1, event_callback=None):
@@ -25,7 +64,7 @@ class ModelSelectionEngine:
             models = {"Linear Regression": LinearRegression(), "Ridge": Ridge(), "ElasticNet": ElasticNet(random_state=self.random_state), "Decision Tree": DecisionTreeRegressor(random_state=self.random_state), "Random Forest": RandomForestRegressor(n_estimators=80, n_jobs=1, random_state=self.random_state), "Extra Trees": ExtraTreesRegressor(n_estimators=80, n_jobs=1, random_state=self.random_state), "XGBoost Regressor": XGBRegressor(n_estimators=100, max_depth=4, learning_rate=0.1, tree_method="hist", device="cpu", n_jobs=1, random_state=self.random_state, verbosity=0)}
             if n >= 200: models["HistGradientBoosting"] = HistGradientBoostingRegressor(random_state=self.random_state)
         else:
-            models = {"Logistic Regression": LogisticRegression(max_iter=1000, random_state=self.random_state), "Decision Tree": DecisionTreeClassifier(random_state=self.random_state), "Random Forest": RandomForestClassifier(n_estimators=80, n_jobs=1, random_state=self.random_state), "Extra Trees": ExtraTreesClassifier(n_estimators=80, n_jobs=1, random_state=self.random_state), "XGBoost": XGBClassifier(n_estimators=100, max_depth=4, learning_rate=0.1, tree_method="hist", device="cpu", n_jobs=1, random_state=self.random_state, eval_metric="logloss", verbosity=0)}
+            models = {"Logistic Regression": LogisticRegression(max_iter=1000, random_state=self.random_state), "Decision Tree": DecisionTreeClassifier(random_state=self.random_state), "Random Forest": RandomForestClassifier(n_estimators=80, n_jobs=1, random_state=self.random_state), "Extra Trees": ExtraTreesClassifier(n_estimators=80, n_jobs=1, random_state=self.random_state), "XGBoost": _LabelEncodingClassifier(XGBClassifier(n_estimators=100, max_depth=4, learning_rate=0.1, tree_method="hist", device="cpu", n_jobs=1, random_state=self.random_state, eval_metric="logloss", verbosity=0))}
             if n >= 200: models["HistGradientBoosting"] = HistGradientBoostingClassifier(random_state=self.random_state)
             if n <= 5000: models["SVM"] = CalibratedClassifierCV(SVC(random_state=self.random_state), cv=2)
         skipped = {"SVM": "Skipped: more than 5000 samples."} if task != "regression" and n > 5000 else {}

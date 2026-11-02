@@ -37,6 +37,11 @@ def default_search_space(estimator):
     if isinstance(estimator, CalibratedClassifierCV) and isinstance(getattr(estimator, "estimator", None), SVC):
         return {"estimator__C": [0.1, 1.0, 10.0],
                 "estimator__kernel": ["rbf", "linear"]}
+    # Support _LabelEncodingClassifier wrapper (e.g. around XGBClassifier)
+    from .model_selection import _LabelEncodingClassifier
+    if isinstance(estimator, _LabelEncodingClassifier):
+        inner_space = default_search_space(estimator.estimator)
+        return {f"estimator__{k}": v for k, v in inner_space.items()}
     raise ValueError(f"No default search space for estimator type {type(estimator).__name__}")
 
 class HyperparameterTuner:
