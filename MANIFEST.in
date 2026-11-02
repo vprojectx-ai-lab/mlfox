@@ -1,0 +1,12 @@
+include README.md
+include LICENSE
+include CHANGELOG.md
+recursive-include mlfox *.py
+recursive-include examples *.py
+prune tests
+prune .venv_test
+prune .venv_release
+prune .tmp
+prune build
+prune dist
+global-exclude *.py[cod]

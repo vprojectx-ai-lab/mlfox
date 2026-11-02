@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+*.whl
+
+# Virtual environments
+.venv*/
+venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Test / cache
+.pytest_cache/
+.tmp/
+.push_staging/
+
+# Build artifacts
+dist-release*/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Data files (uncomment if you want to track them)
+# *.csv
