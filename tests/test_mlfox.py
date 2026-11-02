@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from sklearn.datasets import load_iris, make_regression
 
-from vprojectx1.mlfox import (
+from mlfox import (
     EncodingScalingIntelligence,
     FeatureEngineeringIntelligence,
     FeatureSelectionIntelligence,
@@ -43,8 +43,8 @@ def run_preprocessing(split):
 
 
 def test_recovery_exports_and_task_detection():
-    from vprojectx1.mlfox.feature_engineering import FeatureEngineeringReport, FeatureEngineeringIntelligence
-    from vprojectx1.mlfox.feature_selection import FeatureSelectionReport, FeatureSelectionIntelligence
+    from mlfox.feature_engineering import FeatureEngineeringReport, FeatureEngineeringIntelligence
+    from mlfox.feature_selection import FeatureSelectionReport, FeatureSelectionIntelligence
 
     assert FeatureEngineeringReport is not FeatureSelectionReport
     assert FeatureEngineeringIntelligence is not FeatureSelectionIntelligence
